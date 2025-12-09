@@ -115,17 +115,18 @@ st.markdown("""
 # ========================================
 # 📁 CONFIGURAÇÃO DE CAMINHOS DE ARQUIVOS
 # ========================================
-# Caminhos de rede para os arquivos de dados do SAP
-# Ajuste conforme a estrutura de diretórios do seu ambiente
+# Caminhos para os arquivos de dados do SAP
+# Para uso local/desenvolvimento: usar caminhos de rede
+# Para deploy no Streamlit Cloud: usar pasta data/
 
 # Relatório MB51: Movimentações de material (entradas, saídas, transferências)
-CAM_MB51 = r"\\br03file\pcoudir\Operacoes\10. Planning Raw Material\Gerenciamento de materiais\Monitor de validades\Mb51_SAP.xlsx"
+CAM_MB51 = "data/Mb51_SAP.xlsx"
 
 # Relatório SQ00: Dados de validade dos materiais
-CAM_SQ00 = r"\\br03file\pcoudir\Operacoes\10. Planning Raw Material\Gerenciamento de materiais\Monitor de validades\Sq00_Validade.xlsx"
+CAM_SQ00 = "data/Sq00_Validade.xlsx"
 
 # Arquivo de fornecedores: Tempos de validade por material
-CAM_FORN = r"\\br03file\pcoudir\Operacoes\10. Planning Raw Material\Gerenciamento de materiais\Atividades diarias\Validade Fornecedores.xlsx"
+CAM_FORN = "data/Validade Fornecedores.xlsx"
 
 # ========================================
 # ⚙️ PARÂMETROS DE CONFIGURAÇÃO
