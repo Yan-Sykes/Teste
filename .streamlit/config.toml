@@ -1,0 +1,88 @@
+# ============================================================================
+# Streamlit Configuration File - Monitor de Validades
+# ============================================================================
+# This file configures the appearance and behavior of the Monitor de Validades
+# application when deployed on Streamlit Cloud or running locally.
+#
+# Documentation: https://docs.streamlit.io/library/advanced-features/configuration
+# ============================================================================
+
+[theme]
+# ----------------------------------------------------------------------------
+# Visual Theme Configuration
+# ----------------------------------------------------------------------------
+# Defines the color scheme and typography for the application interface.
+# These colors create a professional, clean look suitable for data dashboards.
+
+primaryColor = "#1f77b4"              # Blue - Primary accent color for buttons, 
+                                       # links, and interactive elements
+backgroundColor = "#FFFFFF"            # White - Main background color for the app
+secondaryBackgroundColor = "#F0F2F6"  # Light gray - Background for sidebar, 
+                                       # input widgets, and secondary containers
+textColor = "#262730"                 # Dark gray - Primary text color for 
+                                       # readability
+font = "sans serif"                   # Font family - Clean, modern sans-serif 
+                                       # for better screen readability
+
+[server]
+# ----------------------------------------------------------------------------
+# Server Configuration
+# ----------------------------------------------------------------------------
+# Controls how the Streamlit server behaves. These settings are optimized
+# for cloud deployment on Streamlit Cloud (Linux environment).
+
+headless = true                       # Run in headless mode - prevents browser 
+                                       # from auto-opening (required for cloud)
+port = 8501                           # Default Streamlit port - standard port 
+                                       # for Streamlit applications
+enableCORS = false                    # Disable Cross-Origin Resource Sharing - 
+                                       # not needed for Streamlit Cloud hosting
+enableXsrfProtection = true           # Enable XSRF protection - security feature 
+                                       # to prevent cross-site request forgery
+maxUploadSize = 200                   # Maximum file upload size in MB - allows 
+                                       # larger Excel files if needed
+
+[browser]
+# ----------------------------------------------------------------------------
+# Browser Behavior Configuration
+# ----------------------------------------------------------------------------
+# Controls browser-side behavior and data collection settings.
+
+gatherUsageStats = false              # Disable usage statistics - respects user 
+                                       # privacy by not sending analytics to Streamlit
+serverAddress = "localhost"           # Server address for local development
+serverPort = 8501                     # Server port for local development
+
+[runner]
+# ----------------------------------------------------------------------------
+# Script Execution Configuration
+# ----------------------------------------------------------------------------
+# Controls how Streamlit executes the Python script and handles reruns.
+
+magicEnabled = true                   # Enable magic commands - allows implicit 
+                                       # st.write() for variables
+fastReruns = true                     # Enable fast reruns - improves performance 
+                                       # by caching unchanged elements
+fixMatplotlib = true                  # Fix matplotlib compatibility - ensures 
+                                       # proper rendering of matplotlib charts
+
+[client]
+# ----------------------------------------------------------------------------
+# Client-Side Configuration
+# ----------------------------------------------------------------------------
+# Controls client-side behavior and display settings.
+
+showErrorDetails = true               # Show detailed error messages - helpful 
+                                       # for debugging issues
+toolbarMode = "auto"                  # Toolbar display mode - auto-hides when 
+                                       # not in use for cleaner interface
+
+[logger]
+# ----------------------------------------------------------------------------
+# Logging Configuration
+# ----------------------------------------------------------------------------
+# Controls logging level and output for debugging and monitoring.
+
+level = "info"                        # Logging level - 'info' provides good 
+                                       # balance between detail and noise
+                                       # Options: 'error', 'warning', 'info', 'debug'

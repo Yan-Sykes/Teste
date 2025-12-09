@@ -116,8 +116,7 @@ st.markdown("""
 # 📁 CONFIGURAÇÃO DE CAMINHOS DE ARQUIVOS
 # ========================================
 # Caminhos para os arquivos de dados do SAP
-# Para uso local/desenvolvimento: usar caminhos de rede
-# Para deploy no Streamlit Cloud: usar pasta data/
+# Usa caminhos relativos compatíveis com Linux/Windows para deploy em cloud
 
 # Relatório MB51: Movimentações de material (entradas, saídas, transferências)
 CAM_MB51 = "data/Mb51_SAP.xlsx"
@@ -127,6 +126,9 @@ CAM_SQ00 = "data/Sq00_Validade.xlsx"
 
 # Arquivo de fornecedores: Tempos de validade por material
 CAM_FORN = "data/Validade Fornecedores.xlsx"
+
+# Arquivo de vencimentos SAP: Linha do tempo de vencimentos
+CAM_VENCIMENTOS_SAP = "data/Vencimentos_SAP.xlsx"
 
 # ========================================
 # ⚙️ PARÂMETROS DE CONFIGURAÇÃO
@@ -1362,12 +1364,46 @@ def carregar_dados():
         FileNotFoundError: Se algum arquivo não for encontrado
         Exception: Erros de leitura são capturados e tratados
     """
+    # ========== VALIDAÇÃO DE ARQUIVOS ==========
+    # Verifica existência de todos os arquivos necessários antes de carregar
+    arquivos_necessarios = {
+        'MB51 (Movimentações)': CAM_MB51,
+        'SQ00 (Validades)': CAM_SQ00,
+        'Fornecedores (Tempos de Validade)': CAM_FORN
+    }
+    
+    arquivos_faltando = []
+    for nome, caminho in arquivos_necessarios.items():
+        if not os.path.exists(caminho):
+            arquivos_faltando.append(f"- {nome}: {caminho}")
+    
+    if arquivos_faltando:
+        st.error("❌ **Arquivos de dados não encontrados:**")
+        for arquivo in arquivos_faltando:
+            st.error(arquivo)
+        st.info("""
+        **Como resolver:**
+        1. Certifique-se de que os arquivos Excel estão na pasta `data/`
+        2. Verifique os nomes dos arquivos:
+           - `Mb51_SAP.xlsx`
+           - `Sq00_Validade.xlsx`
+           - `Validade Fornecedores.xlsx`
+        3. Se estiver no Streamlit Cloud, faça commit dos arquivos no Git
+        """)
+        st.stop()
+    
     # ========== CARREGA MB51 (MOVIMENTAÇÕES) ==========
     # PERF: Load only first 9 required columns to reduce memory and I/O time
     # PERF: Specify dtype=str to avoid type inference overhead (Requirement 2.5)
     # PERF: Use parse_dates parameter for automatic date parsing during load (Requirement 2.4)
     # Impact: 10-15% faster than post-load conversion
-    mb51 = pd.read_excel(CAM_MB51, dtype=str, engine="openpyxl", nrows=None)
+    try:
+        mb51 = pd.read_excel(CAM_MB51, dtype=str, engine="openpyxl", nrows=None)
+    except Exception as e:
+        st.error(f"❌ **Erro ao carregar arquivo MB51:** {CAM_MB51}")
+        st.error(f"Detalhes: {str(e)}")
+        st.info("Verifique se o arquivo está no formato correto (.xlsx) e não está corrompido.")
+        st.stop()
     mb51 = mb51.iloc[:, :9].copy()
     
     # Normaliza nomes de colunas para padrão esperado
@@ -1388,7 +1424,13 @@ def carregar_dados():
     # PERF: Specify dtype=str to avoid type inference overhead (Requirement 2.5)
     # Note: parse_dates applied after column identification due to dynamic column names
     # Impact: Reduces load time by avoiding pandas type inference on all columns
-    sq00 = pd.read_excel(CAM_SQ00, dtype=str, engine="openpyxl")
+    try:
+        sq00 = pd.read_excel(CAM_SQ00, dtype=str, engine="openpyxl")
+    except Exception as e:
+        st.error(f"❌ **Erro ao carregar arquivo SQ00:** {CAM_SQ00}")
+        st.error(f"Detalhes: {str(e)}")
+        st.info("Verifique se o arquivo está no formato correto (.xlsx) e não está corrompido.")
+        st.stop()
     sq00.columns = sq00.columns.str.strip().str.lower()
     
     # Identifica colunas dinamicamente (nomes podem variar)
@@ -1421,9 +1463,20 @@ def carregar_dados():
     try:
         # Tenta carregar colunas A:I especificamente
         forn = pd.read_excel(CAM_FORN, dtype=str, engine="openpyxl", usecols="A:I")
-    except Exception:
-        # Fallback: carrega todas as colunas
-        forn = pd.read_excel(CAM_FORN, dtype=str, engine="openpyxl")
+    except ValueError:
+        # Fallback: carrega todas as colunas se usecols falhar
+        try:
+            forn = pd.read_excel(CAM_FORN, dtype=str, engine="openpyxl")
+        except Exception as e:
+            st.error(f"❌ **Erro ao carregar arquivo de Fornecedores:** {CAM_FORN}")
+            st.error(f"Detalhes: {str(e)}")
+            st.info("Verifique se o arquivo está no formato correto (.xlsx) e não está corrompido.")
+            st.stop()
+    except Exception as e:
+        st.error(f"❌ **Erro ao carregar arquivo de Fornecedores:** {CAM_FORN}")
+        st.error(f"Detalhes: {str(e)}")
+        st.info("Verifique se o arquivo está no formato correto (.xlsx) e não está corrompido.")
+        st.stop()
     
     # Seleciona colunas relevantes (Material e Tempo de Validade)
     if forn.shape[1] >= 9:
@@ -1498,13 +1551,22 @@ def carregar_dados_timeline():
         - Códigos de Material e Lote são limpos (remove ".0")
         - Datas convertidas para datetime
         - Quantidades convertidas para numérico
+        - Usa caminho relativo compatível com cloud deployment
         
     Raises:
         FileNotFoundError: Se arquivo Vencimentos_SAP.xlsx não encontrado
         Exception: Outros erros de leitura são capturados e exibidos
     """
-    # File path for Vencimentos_SAP
-    CAM_VENCIMENTOS_SAP = r"O:\Operacoes\10. Planning Raw Material\Gerenciamento de materiais\Monitor de validades\Vencimentos_SAP.xlsx"
+    # Verifica existência do arquivo antes de carregar
+    if not os.path.exists(CAM_VENCIMENTOS_SAP):
+        st.error(f"❌ **Arquivo de linha do tempo não encontrado:** {CAM_VENCIMENTOS_SAP}")
+        st.info("""
+        **Como resolver:**
+        1. Certifique-se de que o arquivo `Vencimentos_SAP.xlsx` está na pasta `data/`
+        2. Se estiver no Streamlit Cloud, faça commit do arquivo no Git
+        3. Verifique o nome do arquivo (deve ser exatamente `Vencimentos_SAP.xlsx`)
+        """)
+        st.stop()
     
     try:
         # PERF: Load only columns A-I (usecols parameter) to reduce memory and I/O (Requirement 2.5)
@@ -1570,11 +1632,19 @@ def carregar_dados_timeline():
         
         return df_sap
         
-    except FileNotFoundError:
-        st.error(f"❌ Arquivo não encontrado: {CAM_VENCIMENTOS_SAP}")
+    except pd.errors.EmptyDataError:
+        st.error(f"❌ **Arquivo de linha do tempo está vazio:** {CAM_VENCIMENTOS_SAP}")
+        st.info("Verifique se o arquivo contém dados válidos.")
+        st.stop()
+    except pd.errors.ParserError as e:
+        st.error(f"❌ **Erro ao processar arquivo de linha do tempo:** {CAM_VENCIMENTOS_SAP}")
+        st.error(f"Detalhes: {str(e)}")
+        st.info("Verifique se o arquivo está no formato correto (.xlsx) e não está corrompido.")
         st.stop()
     except Exception as e:
-        st.error(f"❌ Erro ao carregar dados da linha do tempo: {e}")
+        st.error(f"❌ **Erro inesperado ao carregar dados da linha do tempo:** {CAM_VENCIMENTOS_SAP}")
+        st.error(f"Detalhes: {str(e)}")
+        st.info("Entre em contato com o suporte técnico se o problema persistir.")
         st.stop()
 
 # ------------------ CENTRALIZED FILTER STATE MANAGEMENT ------------------
@@ -1978,8 +2048,9 @@ with st.sidebar:
     # ========== UPDATE DATA BUTTON ==========
     st.markdown("---")
     
-    # Path to the update script
-    ATUALIZAR_SCRIPT = r"c:\Users\u138345\OneDrive - Straumann Group\Desktop\Monitor\Atualizar.py"
+    # Path to the update script (relative path for cloud compatibility)
+    # Note: This script only works in local Windows environment with SAP access
+    ATUALIZAR_SCRIPT = "Atualizar.py"
     
     # Check if script exists
     script_exists = os.path.exists(ATUALIZAR_SCRIPT)
@@ -2055,7 +2126,14 @@ with st.sidebar:
                 st.session_state.update_complete = False
                 st.rerun()
     else:
-        st.warning(f"⚠️ Script de atualização não encontrado:\n`{ATUALIZAR_SCRIPT}`")
+        st.info("ℹ️ **Modo Cloud:** Script de atualização não disponível")
+        st.caption("""
+        No ambiente cloud, os dados são atualizados através de commit no Git:
+        1. Execute `Atualizar.py` localmente (Windows)
+        2. Faça commit dos arquivos atualizados em `data/`
+        3. Push para o repositório GitHub
+        4. O Streamlit Cloud fará redeploy automático
+        """)
     
     # ========== SECTION 1: GLOBAL FILTERS ==========
     st.markdown("---")
