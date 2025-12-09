@@ -2,6 +2,51 @@
 
 Este documento fornece instruções detalhadas para realizar o deploy da aplicação Monitor de Validades no Streamlit Cloud.
 
+## ⚡ OTIMIZAÇÕES RECENTES
+
+### Melhorias de Performance Implementadas:
+
+1. **Cache Otimizado**: Reduzido TTL de 15-30min para 5min
+   - Libera memória mais rapidamente
+   - Reduz uso de RAM no Streamlit Cloud
+   
+2. **Indicadores de Progresso**: Adicionado feedback visual durante carregamento
+   - Melhor experiência do usuário
+   - Mostra progresso de cada etapa
+   
+3. **Spinners Informativos**: Mensagens claras durante operações
+   - "Carregando dados do SAP..."
+   - "Carregando linha do tempo..."
+   
+4. **Lazy Loading**: Dados carregados sob demanda
+   - Reduz tempo de inicialização
+   - Melhora responsividade
+
+### Recomendações para Deploy:
+
+#### 1. Tamanho dos Arquivos Excel
+- ✅ **Ideal**: < 10 MB por arquivo
+- ⚠️ **Aceitável**: 10-50 MB
+- ❌ **Problemático**: > 50 MB
+
+**Como reduzir tamanho:**
+```python
+# Remover colunas desnecessárias
+# Limitar dados a últimos 6-12 meses
+# Comprimir arquivos antes de commitar
+```
+
+#### 2. Configuração do Streamlit Cloud
+- **Recursos Mínimos**: 1 GB RAM (plano gratuito)
+- **Recomendado**: 2-4 GB RAM (plano pago)
+- **Python Version**: 3.9 ou 3.10
+
+#### 3. Monitoramento de Performance
+Após deploy, monitore:
+- Tempo de carregamento inicial (meta: < 10s)
+- Tempo de resposta dos filtros (meta: < 2s)
+- Uso de memória (meta: < 80% do disponível)
+
 ## 📋 Índice
 
 1. [Visão Geral](#visão-geral)

@@ -28,11 +28,17 @@ import os
 import subprocess
 
 # Configuração da página Streamlit
+# OTIMIZADO: Configurações para melhor performance
 st.set_page_config(
     page_title="Monitor de Validades",
     layout="wide",
     initial_sidebar_state="expanded",
-    page_icon="📦"
+    page_icon="📦",
+    menu_items={
+        'Get Help': None,
+        'Report a bug': None,
+        'About': "Monitor de Validades - Sistema de Gestão de Validades de Materiais"
+    }
 )
 
 # ========================================
@@ -740,11 +746,12 @@ def parse_tempo_validade_to_days(val):
 # 🧮 LÓGICA DE NEGÓCIO - CÁLCULOS DE VALIDADE
 # ========================================
 
-# PERF: Cache preprocessing with 30-minute TTL (Requirements 4.2, 14.1, 15.1)
+# PERF: Cache preprocessing with 5-minute TTL (Requirements 4.2, 14.1, 15.1)
 # Rationale: Calculations are deterministic for given input data and don't depend on filters
 # Impact: Eliminates 500-800ms of computation on every script re-run
 # Note: Uses boolean masking to avoid unnecessary DataFrame copies (Requirement 15.1)
-@st.cache_data(ttl=1800, show_spinner=False)
+# OTIMIZADO: Reduzido de 30min para 5min para liberar memória mais rápido
+@st.cache_data(ttl=300, show_spinner=False)
 def calcular_vencimento_esperado(df):
     """
     Calcula a data de vencimento esperada baseada na data de entrada e tempo de validade.
@@ -797,11 +804,12 @@ def calcular_vencimento_esperado(df):
     
     return df
 
-# PERF: Cache temporal status calculation with 30-minute TTL (Requirements 4.2, 14.1, 15.1)
+# PERF: Cache temporal status calculation with 5-minute TTL (Requirements 4.2, 14.1, 15.1)
 # Rationale: Status calculations are stable transformations that don't change with filter interactions
 # Impact: Eliminates repetitive date arithmetic and conditional logic on every rerun
 # Note: Uses vectorized operations (np.select) instead of loops for performance
-@st.cache_data(ttl=1800, show_spinner=False)
+# OTIMIZADO: Reduzido de 30min para 5min para liberar memória mais rápido
+@st.cache_data(ttl=300, show_spinner=False)
 def calcular_status_tempo(df, hoje):
     """
     Calcula status temporal baseado na vida útil total do material.
@@ -892,11 +900,12 @@ def calcular_status_tempo(df, hoje):
     
     return df
 
-# PERF: Cache percentage-based status calculation with 30-minute TTL (Requirements 4.2, 14.1, 15.1)
+# PERF: Cache percentage-based status calculation with 5-minute TTL (Requirements 4.2, 14.1, 15.1)
 # Rationale: Percentage calculations are deterministic and independent of user filter selections
 # Impact: Avoids recalculating percentages and status classifications on every script rerun
 # Note: Uses boolean masking and vectorized operations to minimize memory allocations
-@st.cache_data(ttl=1800, show_spinner=False)
+# OTIMIZADO: Reduzido de 30min para 5min para liberar memória mais rápido
+@st.cache_data(ttl=300, show_spinner=False)
 def calcular_status_percentual(df, hoje, limiar_bom=DEFAULT_THRESHOLD_GOOD, limiar_atencao=DEFAULT_THRESHOLD_WARN):
     """
     Calcula status baseado no percentual de validade real vs. esperada.
@@ -976,11 +985,12 @@ def calcular_status_percentual(df, hoje, limiar_bom=DEFAULT_THRESHOLD_GOOD, limi
     
     return df
 
-# PERF: Cache divergence identification with 30-minute TTL (Requirements 4.2, 14.1, 15.1)
+# PERF: Cache divergence identification with 5-minute TTL (Requirements 4.2, 14.1, 15.1)
 # Rationale: Problem classification logic is stable and doesn't depend on filter state
 # Impact: Eliminates repetitive conditional checks and problem type assignments on every rerun
 # Note: Uses np.select for efficient conditional logic without DataFrame copies
-@st.cache_data(ttl=1800, show_spinner=False)
+# OTIMIZADO: Reduzido de 30min para 5min para liberar memória mais rápido
+@st.cache_data(ttl=300, show_spinner=False)
 def identificar_divergencias(df):
     """
     Identifica e classifica problemas e divergências nos dados de validade.
@@ -1115,7 +1125,7 @@ def gerar_auditoria(df):
     # Reseta índice para facilitar exportação
     return df_out.reset_index(drop=True)
 
-@st.cache_data(ttl=1800, show_spinner=False)
+@st.cache_data(ttl=300, show_spinner=False)
 def calcular_status_timeline(df, hoje):
     """
     Calcula status para materiais da aba Timeline baseado em dias até vencimento.
@@ -1320,11 +1330,12 @@ def multi_to_excel_bytes(df_monitor, df_audit):
 # PERF: Cache data loading with 15-minute TTL
 # Rationale: Source files update infrequently (manual SAP exports)
 # Impact: Eliminates 5+ seconds of file I/O on every script rerun
-# PERF: Cache data loading with 15-minute TTL (Requirements 2.3, 4.1, 14.1)
+# PERF: Cache data loading with 5-minute TTL (Requirements 2.3, 4.1, 14.1)
 # Rationale: Source files update infrequently (manual SAP exports)
 # Impact: Eliminates 2-3s file I/O on every script re-run
 # Baseline: 5.2s cold start → Target: <3s with caching
-@st.cache_data(ttl=900, show_spinner=False)
+# OTIMIZADO: Reduzido de 15min para 5min para liberar memória mais rápido
+@st.cache_data(ttl=300, show_spinner="Carregando dados do SAP...")
 def carregar_dados():
     """
     Carrega e integra dados de múltiplas fontes SAP para o dashboard principal.
@@ -1513,10 +1524,11 @@ def carregar_dados():
     
     return df
 
-# PERF: Cache timeline data loading with 15-minute TTL (Requirements 2.3, 4.1, 14.1)
+# PERF: Cache timeline data loading with 5-minute TTL (Requirements 2.3, 4.1, 14.1)
 # Rationale: Timeline data updates infrequently (manual SAP exports)
 # Impact: Eliminates file I/O overhead on script reruns (saves ~1-2s per rerun)
-@st.cache_data(ttl=900, show_spinner=False)
+# OTIMIZADO: Reduzido de 15min para 5min para liberar memória mais rápido
+@st.cache_data(ttl=300, show_spinner="Carregando linha do tempo...")
 def carregar_dados_timeline():
     """
     Carrega dados da linha do tempo de vencimentos do arquivo Vencimentos_SAP.xlsx.
@@ -2030,14 +2042,43 @@ def has_active_filters():
 # Initialize filter state before processing
 initialize_filter_state()
 
+# OTIMIZADO: Indicador de progresso visual para melhor UX
 try:
-    with st.spinner("🔄 Carregando dados..."):
+    # Criar placeholder para barra de progresso
+    progress_placeholder = st.empty()
+    status_placeholder = st.empty()
+    
+    with progress_placeholder.container():
+        st.info("🔄 **Carregando aplicação...** Por favor aguarde.")
+        progress_bar = st.progress(0)
+        
+        # Etapa 1: Carregar dados (40%)
+        status_placeholder.text("📥 Carregando dados do SAP...")
         df = carregar_dados()
+        progress_bar.progress(40)
+        
+        # Etapa 2: Calcular vencimentos (60%)
+        status_placeholder.text("📊 Calculando vencimentos esperados...")
         hoje = pd.Timestamp(datetime.now().date())
         df = calcular_vencimento_esperado(df)
+        progress_bar.progress(60)
+        
+        # Etapa 3: Calcular status temporal (80%)
+        status_placeholder.text("⏰ Calculando status temporal...")
         df = calcular_status_tempo(df, hoje)
+        progress_bar.progress(80)
+        
+        # Etapa 4: Finalizar (100%)
+        status_placeholder.text("✅ Finalizando...")
+        progress_bar.progress(100)
+    
+    # Limpar placeholders após carregamento
+    progress_placeholder.empty()
+    status_placeholder.empty()
+    
 except Exception as e:
-    st.error(f"Erro ao carregar/processar dados: {e}")
+    st.error(f"❌ **Erro ao carregar/processar dados:** {e}")
+    st.info("💡 **Dica:** Verifique se os arquivos Excel estão na pasta `data/` e não estão corrompidos.")
     st.stop()
 
 # ------------------ SIDEBAR DESIGN ------------------
